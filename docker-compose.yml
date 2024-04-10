@@ -1,0 +1,93 @@
+volumes:
+  db-setup-scripts:
+
+# These env variables are coming from the .env file
+x-env: &env
+  MARIADB_PASSWORD: '${MARIADB_PASSWORD:-default_pass}'
+  MARIADB_ROOT_PASSWORD: '${MARIADB_ROOT_PASSWORD:-default_root_pass}'
+  MARIADB_USER: '${MARIADB_USER:-default_user}'
+  MARIADB_DATABASE: '${MARIADB_DATABASE:-default_database}'
+
+x-common: &common
+  restart: unless-stopped
+  tty: True
+
+# Reusable options for game server and login server
+x-server: &server
+  <<: *common
+  image: server:latest
+  depends_on:
+    database:
+      condition: service_healthy
+  build:
+    context: .
+    args:
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_HOSTNAME: mariadb # same as the database.service.container_name
+      LOGIN_SERVER_HOSTNAME: login_server # same as the login-server.service.container_name
+
+services:
+  # This service just combines all SQL scripts in a single directory and mounts it as a volume to be used by the DB
+  sql-scripts:
+    image: alpine
+    entrypoint: ['/bin/sh', '-c']
+    # We can't mount 2 directories in 1 volume so we first copy all script to a temp volume
+    command:
+      - |
+        cp /login-sql-scripts/*.sql /all-sql-scripts/ && cp /game-sql-scripts/*.sql /all-sql-scripts/
+    volumes:
+      - ./dist/db_installer/sql/login:/login-sql-scripts
+      - ./dist/db_installer/sql/game:/game-sql-scripts
+      - db-setup-scripts:/all-sql-scripts
+  database:
+    <<: *common
+    image: mariadb
+    container_name: mariadb # This name is important as it is also the hostname that the server will use to connect to the DB
+    environment:
+      <<: [*env]
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'healthcheck.sh',
+          '--su-mysql',
+          '--connect',
+          '--innodb_initialized',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    volumes:
+      # Every script in /docker-entrypoint-initdb.d will be executed on creation
+      - db-setup-scripts:/docker-entrypoint-initdb.d
+      - ./db_data:/var/lib/mysql
+    depends_on:
+      sql-scripts:
+        condition: service_completed_successfully
+  phpmyadmin:
+    <<: *common
+    image: phpmyadmin
+    ports:
+      - 8080:80
+    environment:
+      - TZ=Etc/UTC
+      - PMA_HOST=mariadb
+    depends_on:
+      database:
+        condition: service_healthy
+  game-server:
+    <<: *server
+    container_name: game_server
+    command: 'bash -c "cd /dist/game/ && ./GameServerTask.sh"'
+    ports:
+      - 7777:7777/tcp
+  login-server:
+    <<: *server
+    container_name: login_server # This name is important as it is also the hostname that the game server will use to connect to the login server
+    command: 'bash -c "cd /dist/login/ && ./LoginServerTask.sh"'
+    ports:
+      - 2106:2106/tcp
