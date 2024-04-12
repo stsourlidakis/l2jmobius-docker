@@ -12,22 +12,6 @@ x-common: &common
   restart: unless-stopped
   tty: True
 
-# Reusable options for game server and login server
-x-server: &server
-  <<: *common
-  image: server:latest
-  depends_on:
-    database:
-      condition: service_healthy
-  build:
-    context: .
-    args:
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_HOSTNAME: mariadb # same as the database.service.container_name
-      LOGIN_SERVER_HOSTNAME: login_server # same as the login-server.service.container_name
-
 services:
   # This service just combines all SQL scripts in a single directory and mounts it as a volume to be used by the DB
   sql-scripts:
@@ -79,8 +63,28 @@ services:
     depends_on:
       database:
         condition: service_healthy
+  # This service will build the image for the Login and Game servers
+  builder:
+    image: server:latest
+    depends_on:
+      database:
+        condition: service_healthy
+    build:
+      context: .
+      args:
+        MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+        MARIADB_USER: ${MARIADB_USER}
+        MARIADB_DATABASE: ${MARIADB_DATABASE}
+        MARIADB_HOSTNAME: mariadb # same as the database.service.container_name
+        LOGIN_SERVER_HOSTNAME: login_server # same as the login-server.service.container_name
   game-server:
-    <<: *server
+    <<: *common
+    image: server:latest
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      database:
+        condition: service_healthy
     container_name: game_server
     command: 'bash -c "\
       cp /opt/l2/GameServer.jar /host-dist/libs/GameServer.jar && \
@@ -92,7 +96,13 @@ services:
     volumes:
       - ./dist:/host-dist
   login-server:
-    <<: *server
+    <<: *common
+    image: server:latest
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+      database:
+        condition: service_healthy
     container_name: login_server # This name is important as it is also the hostname that the game server will use to connect to the login server
     command: 'bash -c "\
       cp /opt/l2/LoginServer.jar /host-dist/libs/LoginServer.jar && \
