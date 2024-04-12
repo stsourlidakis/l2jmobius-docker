@@ -16,6 +16,8 @@ This Docker configuration will help you run a server with [L2jMobius](https://l2
 
 ## Notes
 
+- The runner instance will use the files in your `dist` folder, this means you can reload configs etc without rebuilding (`//reload` in-game command)
+- Starting the game server may take over 1 minute as the performance of docker accessing the files from the host is not that good
 - Some of your configs (username/password/db name/hostnames) will be ignored, values from `.env` will be used instead
 - Inspired by [L2JMobius-on-rpi](https://github.com/Eptarch/l2jmobius-on-rpi/)
 - License: [WTFPL-2.0](https://www.tldrlegal.com/license/do-wtf-you-want-to-public-license-v2-wtfpl-2-0)

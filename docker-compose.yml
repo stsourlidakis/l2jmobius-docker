@@ -82,12 +82,24 @@ services:
   game-server:
     <<: *server
     container_name: game_server
-    command: 'bash -c "cd /dist/game/ && ./GameServerTask.sh"'
+    command: 'bash -c "\
+      cp /opt/l2/GameServer.jar /host-dist/libs/GameServer.jar && \
+      mkdir -p /host-dist/game/log && \
+      cd /host-dist/game/ && \
+      ./GameServerTask.sh"'
     ports:
       - 7777:7777/tcp
+    volumes:
+      - ./dist:/host-dist
   login-server:
     <<: *server
     container_name: login_server # This name is important as it is also the hostname that the game server will use to connect to the login server
-    command: 'bash -c "cd /dist/login/ && ./LoginServerTask.sh"'
+    command: 'bash -c "\
+      cp /opt/l2/LoginServer.jar /host-dist/libs/LoginServer.jar && \
+      mkdir -p /host-dist/Login/log && \
+      cd /host-dist/login/ && \
+      ./LoginServerTask.sh"'
     ports:
       - 2106:2106/tcp
+    volumes:
+      - ./dist:/host-dist
