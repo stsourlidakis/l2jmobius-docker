@@ -3,10 +3,10 @@ volumes:
 
 # These env variables are coming from the .env file
 x-env: &env
-  MARIADB_PASSWORD: '${MARIADB_PASSWORD:-default_pass}'
-  MARIADB_ROOT_PASSWORD: '${MARIADB_ROOT_PASSWORD:-default_root_pass}'
-  MARIADB_USER: '${MARIADB_USER:-default_user}'
-  MARIADB_DATABASE: '${MARIADB_DATABASE:-default_database}'
+  MARIADB_PASSWORD: "${MARIADB_PASSWORD:-default_pass}"
+  MARIADB_ROOT_PASSWORD: "${MARIADB_ROOT_PASSWORD:-default_root_pass}"
+  MARIADB_USER: "${MARIADB_USER:-default_user}"
+  MARIADB_DATABASE: "${MARIADB_DATABASE:-default_database}"
 
 x-common: &common
   restart: unless-stopped
@@ -16,7 +16,7 @@ services:
   # This service just combines all SQL scripts in a single directory and mounts it as a volume to be used by the DB
   sql-scripts:
     image: alpine
-    entrypoint: ['/bin/sh', '-c']
+    entrypoint: ["/bin/sh", "-c"]
     # We can't mount 2 directories in 1 volume so we first copy all script to a temp volume
     command:
       - |
@@ -35,11 +35,11 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'healthcheck.sh',
-          '--su-mysql',
-          '--connect',
-          '--innodb_initialized',
+          "CMD",
+          "healthcheck.sh",
+          "--su-mysql",
+          "--connect",
+          "--innodb_initialized",
         ]
       interval: 5s
       timeout: 5s
