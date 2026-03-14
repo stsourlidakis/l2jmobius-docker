@@ -90,7 +90,7 @@ services:
       cp /opt/l2/GameServer.jar /host-dist/libs/GameServer.jar && \
       mkdir -p /host-dist/game/log && \
       cd /host-dist/game/ && \
-      ./GameServerTask.sh"'
+      bash ./GameServerTask.sh"'
     ports:
       - 7777:7777/tcp
     volumes:
@@ -108,7 +108,7 @@ services:
       cp /opt/l2/LoginServer.jar /host-dist/libs/LoginServer.jar && \
       mkdir -p /host-dist/login/log && \
       cd /host-dist/login/ && \
-      ./LoginServerTask.sh"'
+      bash ./LoginServerTask.sh"'
     ports:
       - 2106:2106/tcp
     volumes:
