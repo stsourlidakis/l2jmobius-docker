@@ -106,7 +106,7 @@ services:
     container_name: login_server # This name is important as it is also the hostname that the game server will use to connect to the login server
     command: 'bash -c "\
       cp /opt/l2/LoginServer.jar /host-dist/libs/LoginServer.jar && \
-      mkdir -p /host-dist/Login/log && \
+      mkdir -p /host-dist/login/log && \
       cd /host-dist/login/ && \
       ./LoginServerTask.sh"'
     ports:
